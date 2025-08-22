@@ -22,8 +22,6 @@ todo-app/
 │   │   └── todoRoutes.js
 │   ├── controllers/
 │   │   └── todoController.js
-│   ├── models/            # (Optional) If MongoDB is used
-│   │   └── todoModel.js
 │   └── server.js
 └── README.md
 ```
