@@ -34,7 +34,7 @@ jobs:
             echo "⚠️ No server folder found, skipping backend install."
           fi
 
-      # 5. Install frontend dependencies (client)
+      # 5. Install frontend dependencies (client) + build
       - name: Install frontend dependencies
         run: |
           if [ -d "client" ]; then
@@ -44,18 +44,13 @@ jobs:
           else
             echo "⚠️ No client folder found, skipping frontend build."
           fi
-        jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build project
-        run: npm run build
+
+      # 6. Upload build artifact
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build
-          path: build/   # or dist/ depending on your project
+          path: client/build/   # Adjust if different (dist/ for Vue, Angular, etc.)
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,11 +61,6 @@ jobs:
         with:
           name: build
           path: release
-      - name: Deploy
-        run: echo "Deploying from release folder..."
-
-
-    
 
       # 2. Copy files to EC2
       - name: Copy files to EC2
@@ -99,4 +89,3 @@ jobs:
               pm2 start server.js --name myapp || pm2 restart myapp
             fi
             pm2 save
-
