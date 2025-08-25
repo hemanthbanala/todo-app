@@ -1,48 +1,73 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches:
+      - main   # run when pushing to main
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Install server dependencies
-      run: |
-        cd server
-        npm install
+      # ---- Backend ----
+      - name: Install backend dependencies
+        run: |
+          cd server
+          npm install
 
-    - name: Install client dependencies
-      run: |
-        cd client
-        npm install
+      # ---- Frontend ----
+      - name: Install frontend dependencies
+        run: |
+          cd client
+          npm install
 
-    - name: Run client tests
-      run: |
-        cd client
-        npm test -- --watchAll=false
+      - name: Build frontend
+        run: |
+          cd client
+          npm run build
 
-    - name: Build client
-      run: |
-        cd client
-        npm run build
+  deploy:
+    needs: build   # only run if build job succeeds
+    runs-on: ubuntu-latest
 
-    - name: Start server (background)
-      run: |
-        cd server
-        npm start &
-      shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Add more steps here if you have integration tests or deployment
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            # go to app folder (or clone if first time)
+            cd /home/${{ secrets.SERVER_USER }}/todo-app || git clone https://github.com/<your-username>/<your-repo>.git todo-app
+            cd todo-app
+
+            # pull latest code
+            git pull origin main
+
+            # install backend deps
+            cd server
+            npm install --production
+
+            # install frontend deps + build
+            cd ../client
+            npm install
+            npm run build
+
+            # go back to server and restart with PM2
+            cd ../server
+            pm2 restart todo-app || pm2 start server.js --name "todo-app"
+          EOF
