@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main   # run when pushing to main
+      - main
 
 jobs:
   build:
@@ -18,13 +18,11 @@ jobs:
         with:
           node-version: '18'
 
-      # ---- Backend ----
       - name: Install backend dependencies
         run: |
           cd server
           npm install
 
-      # ---- Frontend ----
       - name: Install frontend dependencies
         run: |
           cd client
@@ -36,38 +34,9 @@ jobs:
           npm run build
 
   deploy:
-    needs: build   # only run if build job succeeds
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            # go to app folder (or clone if first time)
-            cd /home/${{ secrets.SERVER_USER }}/todo-app || git clone https://github.com/<your-username>/<your-repo>.git todo-app
-            cd todo-app
-
-            # pull latest code
-            git pull origin main
-
-            # install backend deps
-            cd server
-            npm install --production
-
-            # install frontend deps + build
-            cd ../client
-            npm install
-            npm run build
-
-            # go back to server and restart with PM2
-            cd ../server
-            pm2 restart todo-app || pm2 start server.js --name "todo-app"
-          EOF
