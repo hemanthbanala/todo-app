@@ -44,3 +44,55 @@ jobs:
           else
             echo "⚠️ No client folder found, skipping frontend build."
           fi
+            # 6. Save build artifacts (frontend + backend)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: |
+            client/build
+            server
+            server/package.json
+            server/package-lock.json
+          if-no-files-found: ignore
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      # 1. Download build artifact from previous job
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: release
+
+      # 2. Copy files to EC2
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "release/*"
+          target: ${{ secrets.EC2_PATH }}
+
+      # 3. Restart application on EC2
+      - name: Restart app on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ${{ secrets.EC2_PATH }}/server
+            npm ci --omit=dev
+            # If using ecosystem.config.js (recommended)
+            if [ -f "ecosystem.config.js" ]; then
+              pm2 startOrReload ecosystem.config.js
+            else
+              pm2 start server.js --name myapp || pm2 restart myapp
+            fi
+            pm2 save
+
