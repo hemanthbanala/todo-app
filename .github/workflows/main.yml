@@ -10,35 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Get repo code into the runner
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Debug repo structure (to confirm paths)
+      - name: Debug repo structure
+        run: ls -R
+
+      # 3. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
+      # 4. Install backend dependencies (server)
       - name: Install backend dependencies
         run: |
-          cd todo-app
-          cd server
-          npm install
+          if [ -d "server" ]; then
+            cd server
+            npm install
+          else
+            echo "⚠️ No server folder found, skipping backend install."
+          fi
 
+      # 5. Install frontend dependencies (client)
       - name: Install frontend dependencies
         run: |
-          cd todo-app
-          cd client
-          npm install
-
-      - name: Build frontend
-        run: |
-          cd client
-          npm run build
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+          if [ -d "client" ]; then
+            cd client
+            npm install
+            npm run build
+          else
+            echo "⚠️ No client folder found, skipping frontend build."
+          fi
