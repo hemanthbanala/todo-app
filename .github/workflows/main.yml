@@ -6,73 +6,41 @@ on:
       - master
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Get repo code into the runner
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Debug repo structure (to confirm paths)
-      - name: Debug repo structure
-        run: ls -R
-
-      # 3. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      # 4. Install backend dependencies (server)
       - name: Install backend dependencies
         run: |
           if [ -d "server" ]; then
             cd server
             npm install
-          else
-            echo "⚠️ No server folder found, skipping backend install."
           fi
 
-      # 5. Install frontend dependencies (client) + build
-      - name: Install frontend dependencies
+      - name: Build frontend
         run: |
           if [ -d "client" ]; then
             cd client
             npm install
             npm run build
-          else
-            echo "⚠️ No client folder found, skipping frontend build."
           fi
 
-      # 6. Upload build artifact
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: client/build/   # Adjust if different (dist/ for Vue, Angular, etc.)
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: release
-
-      # 2. Copy files to EC2
       - name: Copy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "release/*"
+          source: "./"   # send your project (or client/build) to EC2
           target: ${{ secrets.EC2_PATH }}
 
-      # 3. Restart application on EC2
       - name: Restart app on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -82,10 +50,5 @@ jobs:
           script: |
             cd ${{ secrets.EC2_PATH }}/server
             npm ci --omit=dev
-            # If using ecosystem.config.js (recommended)
-            if [ -f "ecosystem.config.js" ]; then
-              pm2 startOrReload ecosystem.config.js
-            else
-              pm2 start server.js --name myapp || pm2 restart myapp
-            fi
+            pm2 startOrReload ecosystem.config.js || pm2 restart myapp
             pm2 save
