@@ -1,0 +1,72 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #dc7a03;
+  margin: 0;
+  padding: 0;
+}
+.App {
+  max-width: 600px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+h1 {
+  text-align: center;
+}
+.todo-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.todo-form input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.todo-form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #007bff;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.todo-list {
+  list-style: none;
+  padding: 0;
+}
+.todo-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9f9f9;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+.todo-list li.completed strong {
+  text-decoration: line-through;
+  color: #888;
+}
+.todo-list button {
+  margin-left: 0.5rem;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+}
+.todo-list button:nth-child(1) {
+  background: #28a745;
+}
+.todo-list button:nth-child(2) {
+  background: #ffc107;
+  color: #333;
+}
+.todo-list button:nth-child(3) {
+  background: #dc3545;
+}
